@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>串口采样网关</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <h1>串口采样网关 <span class="sub">本地 TCP 模拟 · 原始字节留痕</span></h1>
+  <div class="statusbar">
+    <span id="conn" class="pill gray">未连接</span>
+    <span id="pauseState" class="pill gray">运行中</span>
+    <span id="simaddr" class="mono"></span>
+    <span class="spacer"></span>
+    <button id="btnPause" class="btn warn">暂停接入</button>
+    <button id="btnResume" class="btn ok" disabled>恢复接入</button>
+    <a class="btn" href="/api/export.csv" download>导出 CSV</a>
+    <a class="btn" href="/api/export.json" download>导出 JSON</a>
+  </div>
+</header>
+
+<section class="cards" id="stats">
+  <div class="card"><div class="num" id="stSamples">0</div><div class="lbl">已入库样本</div></div>
+  <div class="card"><div class="num" id="stDup">0</div><div class="lbl">重复采样(已忽略)</div></div>
+  <div class="card"><div class="num" id="stBad">0</div><div class="lbl">坏包(已隔离)</div></div>
+  <div class="card"><div class="num" id="stNoise">0</div><div class="lbl">噪声段 / 字节</div></div>
+  <div class="card"><div class="num" id="stOffset">0</div><div class="lbl">字节流偏移</div></div>
+</section>
+
+<section class="cards" id="live"></section>
+
+<main>
+  <div class="col">
+    <section class="panel">
+      <h2>通道配置 <span class="hint">按生效序号套用，与处理时刻无关</span></h2>
+      <form id="cfgForm" class="cfgform">
+        <label>通道 <input name="channel" type="number" value="0" min="0" max="15" required></label>
+        <label>倍率 <input name="scale" type="number" step="any" value="0.001" required></label>
+        <label>单位 <input name="unit" type="text" value="V" required></label>
+        <label>生效序号 <input name="effective_seq" type="number" min="0" max="65535" required></label>
+        <label>生效 epoch <input name="effective_epoch" type="number" min="0" placeholder="默认当前"></label>
+        <button class="btn ok" type="submit">下发配置</button>
+      </form>
+      <table id="cfgTable">
+        <thead><tr><th>版本</th><th>通道</th><th>倍率</th><th>单位</th><th>生效 epoch</th><th>生效序号</th><th>下发时间</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h2>模拟器触发 <span class="hint">分片 / 粘包 / 噪声 / 坏包 / 重复 / 回绕 / 重启</span></h2>
+      <div class="triggers">
+        <button class="btn" data-cmd="fragment">分片到达</button>
+        <button class="btn" data-cmd="sticky">连续粘包</button>
+        <button class="btn" data-cmd="noise">噪声字节</button>
+        <button class="btn" data-cmd="bad">坏包</button>
+        <button class="btn" data-cmd="dup">重复采样</button>
+        <button class="btn" data-cmd="wrap">序号回绕</button>
+        <button class="btn" data-cmd="restart">设备重启</button>
+      </div>
+      <div id="simReply" class="mono hint"></div>
+    </section>
+
+    <section class="panel">
+      <h2>事件</h2>
+      <table id="evtTable">
+        <thead><tr><th>时间</th><th>类型</th><th>通道</th><th>说明</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h2>错误与噪声 <span class="hint">坏包隔离，含字节流偏移</span></h2>
+      <table id="errTable">
+        <thead><tr><th>#</th><th>类型</th><th>流偏移</th><th>长度</th><th>原始字节</th><th>详情</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </div>
+
+  <section class="panel grow">
+    <h2>实时样本 <span class="hint">原始字节 + 解析值 + 配置版本；切换边界以版本底色区分</span></h2>
+    <table id="sampleTable">
+      <thead><tr>
+        <th>#</th><th>通道</th><th>epoch</th><th>序号</th><th>原始字节(hex)</th>
+        <th>原始值</th><th>换算值</th><th>配置</th><th>流偏移</th><th>标记</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
